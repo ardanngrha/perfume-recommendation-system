@@ -65,14 +65,8 @@ Dari dataset, kita dapat melihat bahwa hampir semua parfum memiliki nama, brand,
 Melihat distribusi merek parfum akan membantu memahami keberagaman dan keseimbangan dataset.
 
 ```py
-plt.figure(figsize=(10, 6))
 brand_counts = df['Brand'].value_counts().head(20)
 sns.barplot(x=brand_counts.values, y=brand_counts.index, hue=brand_counts.index, palette='viridis', legend=False)
-plt.title('Merek Parfum 20 Teratas', fontsize=15)
-plt.xlabel('Jumlah', fontsize=12)
-plt.ylabel('Merek', fontsize=12)
-plt.tight_layout()
-plt.show()
 ```
 
 <img width="986" alt="parfum-20-teratas" src="https://github.com/user-attachments/assets/a7b52940-311b-4e9a-94b3-e16422a9050c" />
@@ -89,12 +83,6 @@ all_notes = re.sub(r'[^\w\s,]', '', all_notes.lower())
 all_notes_list = [note.strip() for note in all_notes.split(',')]
 
 wordcloud = WordCloud(width=800, height=400, background_color='white', max_words=100).generate(all_notes)
-
-plt.figure(figsize=(10, 6))
-plt.imshow(wordcloud, interpolation='bilinear')
-plt.axis('off')
-plt.tight_layout()
-plt.show()
 ```
 
 <img width="988" alt="wordcloud" src="https://github.com/user-attachments/assets/51c4d510-3dc8-432b-8889-326b622dc013" />
@@ -115,13 +103,7 @@ notes_counter = Counter(all_notes_list)
 all_notes_freq = notes_counter.most_common(15)
 all_notes_df = pd.DataFrame(all_notes_freq, columns=['Note', 'Frequency'])
 
-plt.figure(figsize=(10, 6))
 sns.barplot(x='Frequency', y='Note', hue='Note', data=all_notes_df, palette='viridis', legend=False)
-plt.title('Aroma Parfum Paling Umum', fontsize=15)
-plt.xlabel('Frekuensi', fontsize=12)
-plt.ylabel('Aroma', fontsize=12)
-plt.tight_layout()
-plt.show()
 ```
 
 <img width="983" alt="aroma-paling-umum" src="https://github.com/user-attachments/assets/6953c485-3ebd-4d9f-ada8-3065f6c8e5f4" />
@@ -141,14 +123,7 @@ Menganalisis jumlah notes dapat memberikan wawasan tentang kelengkapan dan kedet
 # Hitung jumlah notes
 df['Notes_Count'] = df['Notes'].apply(lambda x: len(str(x).split(',')) if not pd.isna(x) else 0)
 
-plt.figure(figsize=(10, 6))
 sns.histplot(df['Notes_Count'], bins=30, color='salmon')
-plt.title('Distribusi Jumlah Aroma dalam Parfum', fontsize=15)
-plt.xlabel('Jumlah Aroma', fontsize=12)
-plt.ylabel('Frekuensi', fontsize=12)
-plt.grid(axis='y', alpha=0.3)
-plt.tight_layout()
-plt.show()
 ```
 
 <img width="981" alt="jumlah_notes" src="https://github.com/user-attachments/assets/c8755be1-791c-4cc9-bd1a-e7c5c73945bc" />
@@ -191,18 +166,14 @@ def normalize_text(text):
     if pd.isna(text):
         return text
     
-    # Konversi ke lowercase
     text = text.lower()
     
-    # Hapus karakter khusus dan angka
     text = re.sub(r'[^a-zA-Z\s]', ' ', text)
     
-    # Hapus whitespace berlebih
     text = re.sub(r'\s+', ' ', text).strip()
     
     return text
 
-# Terapkan normalisasi ke kolom Description dan Notes menggunakan .loc
 df_clean.loc[:, 'Notes_Normalized'] = df_clean['Notes'].apply(normalize_text)
 ```
 
@@ -213,13 +184,7 @@ df_clean.loc[:, 'Notes_Normalized'] = df_clean['Notes'].apply(normalize_text)
 - Penghapusan karakter khusus dan angka mengurangi noise yang tidak memberikan informasi semantik tentang parfum.
 - Normalisasi teks meningkatkan kualitas ekstraksi fitur dan perhitungan similarity pada tahap berikutnya.
 
-Data siap digunakan untuk pemodelan sistem rekomendasi berbasis konten. Dataset telah dibersihkan dari missing values dan dinormalisasi untuk memastikan kualitas data yang optimal. **Tidak digunakan** stopword removal pada tahap ini karena kita ingin mempertahankan semua kata untuk analisis similarity yang lebih baik.
-
-## Modeling
-
-Pada tahap ini, kita akan mengimplementasikan model sistem rekomendasi berbasis konten (Content-Based Filtering) dengan menggunakan teknik TF-IDF dan Cosine Similarity untuk merekomendasikan parfum dengan karakteristik serupa.
-
-### TF-IDF Vectorization
+### 3. TF-IDF Vectorization
 
 ```py
 tfidf_vectorizer = TfidfVectorizer(
@@ -232,6 +197,17 @@ tfidf_matrix = tfidf_vectorizer.fit_transform(df_clean['Notes_Clean'])
 
 ```
 
+- TF-IDF (Term Frequency-Inverse Document Frequency) digunakan untuk mengubah teks menjadi vektor numerik.
+- Parameter `min_df=2` menghilangkan kata yang sangat jarang (muncul di kurang dari 2 dokumen). Parameter `max_df=0.9` menghilangkan kata yang terlalu umum (muncul di lebih dari 90% dokumen). Parameter ini membantu mengurangi noise dari kata-kata yang terlalu jarang atau terlalu umum, meningkatkan kualitas fitur.
+- Parameter max_features=1000 membatasi jumlah fitur yang diambil menjadi 1000 kata paling penting.
+- Parameter ngram_range=(1, 2) memungkinkan penangkapan unigram (kata tunggal) dan bigram (2 kata berurutan). Penggunaan bigram memungkinkan penangkapan frasa penting seperti "amber wood", "rose water", atau "citrus bergamot" yang memberikan informasi lebih dari sekadar kata individual.
+
+Data siap digunakan untuk pemodelan sistem rekomendasi berbasis konten. Dataset telah dibersihkan dari missing values dan dinormalisasi untuk memastikan kualitas data yang optimal. **Tidak digunakan** stopword removal pada tahap ini karena kita ingin mempertahankan semua kata untuk analisis similarity yang lebih baik.
+
+## Modeling
+
+Pada tahap ini, kita akan mengimplementasikan model sistem rekomendasi berbasis konten (Content-Based Filtering) dengan menggunakan teknik TF-IDF dan Cosine Similarity untuk merekomendasikan parfum dengan karakteristik serupa.
+
 ### Cosine Similarity
 
 ```py
@@ -240,6 +216,9 @@ print(f"Shape dari Cosine Similarity Matrix: {cosine_sim.shape}")
 ```
 
 <img width="375" alt="Screenshot 2025-05-17 at 22 36 15" src="https://github.com/user-attachments/assets/ae3cb3f1-a83d-4810-aff0-331c257817df" />
+
+- Cosine similarity mengukur kesamaan antara dua vektor dengan menghitung kosinus sudut di antara keduanya.
+- Nilai berkisar dari 0 (tidak mirip sama sekali) hingga 1 (identik).
 
 ### Sistem Rekomendasi
 
@@ -258,6 +237,12 @@ def recommend_perfume(name, top_n=5):
     return df_clean[['Name', 'Brand', 'Notes']].iloc[perfume_indices], [i[1] for i in sim_scores]
 ```
 
+- Untuk setiap parfum yang menjadi input, sistem menghitung kesamaan dengan semua parfum lain dalam dataset.
+- Sistem kemudian mengurutkan parfum berdasarkan skor kesamaan dan mengambil N parfum teratas.
+- Hasil rekomendasi menampilkan nama parfum, brand, notes, dan skor kesamaan.
+- Pada contoh di atas, sistem merekomendasikan 10 parfum teratas yang paling mirip dengan parfum "Tihota Eau de Parfum".
+- Hasil rekomendasi menunjukkan bahwa parfum-parfum yang direkomendasikan memiliki kesamaan yang tinggi dengan parfum input, berdasarkan karakteristik aroma mereka.
+
 ### Top 10 rekomendasi parfum
 
 ```py
@@ -273,87 +258,72 @@ recommendations
 
 <img width="893" alt="top10" src="https://github.com/user-attachments/assets/1a65e657-2300-4591-8982-6ebc333b9380" />
 
-### Penjelasan Model
-
-#### 1. TF-IDF Vectorization
-
-- TF-IDF (Term Frequency-Inverse Document Frequency) digunakan untuk mengubah teks menjadi vektor numerik.
-- Parameter `min_df=2` menghilangkan kata yang sangat jarang (muncul di kurang dari 2 dokumen). Parameter `max_df=0.9` menghilangkan kata yang terlalu umum (muncul di lebih dari 90% dokumen). Parameter ini membantu mengurangi noise dari kata-kata yang terlalu jarang atau terlalu umum, meningkatkan kualitas fitur.
-- Parameter max_features=1000 membatasi jumlah fitur yang diambil menjadi 1000 kata paling penting.
-- Parameter ngram_range=(1, 2) memungkinkan penangkapan unigram (kata tunggal) dan bigram (2 kata berurutan). Penggunaan bigram memungkinkan penangkapan frasa penting seperti "amber wood", "rose water", atau "citrus bergamot" yang memberikan informasi lebih dari sekadar kata individual.
-  
-Kelebihan TF-IDF adalah kemampuannya untuk menangkap pentingnya kata dalam konteks dokumen, sehingga membantu dalam membedakan parfum berdasarkan karakteristik aroma mereka. Dengan menggunakan TF-IDF, kita dapat mengubah deskripsi dan notes parfum menjadi representasi numerik yang dapat digunakan untuk menghitung kesamaan antar parfum.
-
-Kekurangan TF-IDF adalah bahwa ia tidak mempertimbangkan urutan kata, sehingga informasi tentang konteks dan struktur kalimat hilang. Namun, dalam konteks sistem rekomendasi parfum, fokus utama adalah pada kesamaan karakteristik aroma, sehingga TF-IDF tetap menjadi pilihan yang baik.
-
-#### 2. Cosine Similarity
-
-- Cosine similarity mengukur kesamaan antara dua vektor dengan menghitung kosinus sudut di antara keduanya.
-- Nilai berkisar dari 0 (tidak mirip sama sekali) hingga 1 (identik).
-
-#### 3. Sistem Rekomendasi
-
-- Untuk setiap parfum yang menjadi input, sistem menghitung kesamaan dengan semua parfum lain dalam dataset.
-- Sistem kemudian mengurutkan parfum berdasarkan skor kesamaan dan mengambil N parfum teratas.
-- Hasil rekomendasi menampilkan nama parfum, brand, notes, dan skor kesamaan.
-- Pada contoh di atas, sistem merekomendasikan 10 parfum teratas yang paling mirip dengan parfum "Tihota Eau de Parfum".
-- Hasil rekomendasi menunjukkan bahwa parfum-parfum yang direkomendasikan memiliki kesamaan yang tinggi dengan parfum input, berdasarkan karakteristik aroma mereka.
-
 ## Evaluation
 
-Untuk mengevaluasi kinerja model rekomendasi berbasis konten yang telah dikembangkan, kita akan menggunakan beberapa metrik evaluasi yang sesuai untuk sistem rekomendasi:
+Untuk mengevaluasi kinerja model rekomendasi berbasis konten yang telah dikembangkan, kita akan menggunakan beberapa metrik evaluasi yang sesuai untuk sistem rekomendasi. Penggunaan threshold 0.2, 0.3, 0.4 pada cosine similarity score akan digunakan untuk menentukan apakah dua parfum dianggap mirip atau tidak. Metrik yang akan digunakan dalam evaluasi ini adalah Precision at K dan Recall at K.
 
-### 1. Similarity Score
+### 1. Precision at K
 
-Similarity adalah metrik utama yang digunakan dalam model ini untuk mengukur kesamaan antara parfum. Nilai berkisar dari 0 (tidak mirip sama sekali) hingga 1 (identik).
+Precision at K mengukur proporsi rekomendasi yang relevan di antara K rekomendasi teratas yang diberikan oleh sistem. Dalam konteks ini, kita akan menghitung Precision at K untuk 5, 10, 15 rekomendasi teratas.
 
-Formula untuk menghitung similarity score adalah sebagai berikut:
+Formula Precision at K: $$ \text{Precision@K} = \frac{\text{Jumlah Rekomendasi Relevan}}{K} $
 
-$\text{Cosine Similarity} = \frac{A \cdot B}{||A|| \cdot ||B||}$
+### 2. Recall at K
 
-di mana:
+Recall at K mengukur proporsi item relevan yang berhasil direkomendasikan di antara semua item relevan yang ada. Dalam konteks ini, kita akan menghitung Recall at K untuk 5, 10, 15 rekomendasi teratas.
 
-- $A$ dan $B$ adalah vektor representasi dari dua parfum yang dibandingkan.
-- $||A||$ dan $||B||$ adalah norma (magnitudo) dari vektor $A$ dan $B$.
-- $A \cdot B$ adalah hasil kali dot antara dua vektor.
+Formula Recall at K: $$ \text{Recall@K} = \frac{\text{Jumlah Rekomendasi Relevan}}{\text{Jumlah Item Relevan}} $$
 
-### 2. Diversity
+### Rangkuman Evaluation
 
-Diversity mengukur seberapa beragam rekomendasi yang diberikan oleh sistem. Dalam konteks ini, kita dapat menggunakan metrik seperti Jaccard Similarity untuk mengukur kesamaan antara notes parfum dalam rekomendasi.
+Tabel di bawah ini menunjukkan hasil evaluasi sistem rekomendasi berbasis konten yang telah dikembangkan. Hasil ini mencakup rata-rata nilai Precision at K dan Recall at K untuk 5, 10, dan 15 rekomendasi teratas berdasarkan pemilihan parfum secara acak.
 
-Formula untuk menghitung Jaccard Similarity adalah sebagai berikut:
+| Threshold | K   | Avg Precision | Avg Recall |
+| --------- | --- | ------------- | ---------- |
+| 0.2       | 5   | 1.00          | 0.33       |
+| 0.2       | 10  | 1.00          | 0.67       |
+| 0.2       | 15  | 1.00          | 1.00       |
+| 0.3       | 5   | 0.89          | 0.68       |
+| 0.3       | 10  | 0.70          | 0.89       |
+| 0.3       | 15  | 0.57          | 1.00       |
+| 0.4       | 5   | 0.32          | 0.62       |
+| 0.4       | 10  | 0.18          | 0.63       |
+| 0.4       | 15  | 0.14          | 0.65       |
 
-$\text{Jaccard Similarity} = \frac{|A \cap B|}{|A \cup B|}$
-
-di mana:
-
-- $|A \cap B|$ adalah jumlah elemen yang ada di kedua set (kesamaan).
-- $|A \cup B|$ adalah jumlah elemen yang ada di set $A$ dan $B$ (total elemen).
-- $|A|$ dan $|B|$ adalah jumlah elemen dalam set $A$ dan $B$ masing-masing.
-
-### Rangkuman Evaluasi
-
-<img width="443" alt="rangkuman" src="https://github.com/user-attachments/assets/456d71a3-f990-4f5f-a7ff-820e7ce2f2c0" />
+- Dari hasil evaluasi, dapat dilihat bahwa sistem rekomendasi memiliki performa yang baik pada threshold 0.2, dengan nilai Precision dan Recall yang tinggi untuk semua K.
+- Pada threshold 0.3, meskipun nilai Precision masih cukup baik, nilai Recall mulai menurun, menunjukkan bahwa sistem mulai kehilangan beberapa rekomendasi relevan.
+- Pada threshold 0.4, baik Precision maupun Recall mengalami penurunan yang signifikan, menunjukkan bahwa sistem mulai memberikan rekomendasi yang kurang relevan.
+- Secara keseluruhan, sistem rekomendasi berbasis konten ini menunjukkan performa yang baik dalam memberikan rekomendasi parfum yang relevan berdasarkan karakteristik aroma, terutama pada threshold 0.2.
 
 ## Conclusion
 
 Berdasarkan hasil pengembangan dan evaluasi model rekomendasi parfum berbasis konten, beberapa kesimpulan penting dapat ditarik:
 
-### Keterkaitan dengan Business Understanding
+1. **Efektivitas Sistem Rekomendasi**: Sistem rekomendasi berbasis konten yang dikembangkan menunjukkan performa yang sangat baik dalam memberikan rekomendasi parfum yang relevan berdasarkan karakteristik aroma. Pada threshold 0.2, sistem mencapai nilai precision 100% untuk semua nilai K yang diuji, menunjukkan bahwa seluruh rekomendasi yang diberikan relevan dengan preferensi pengguna.
 
-- Solusi untuk "Paradoks Pilihan": Sistem rekomendasi parfum yang dikembangkan berhasil mengatasi permasalahan "paradoks pilihan" dengan menyederhanakan proses pencarian parfum. Dari ribuan pilihan parfum yang tersedia di pasar, sistem mampu menyarankan 5-10 parfum yang paling relevan dengan preferensi karakteristik aroma pengguna.
-- Kuantifikasi Kesamaan Parfum: Dengan mengimplementasikan TF-IDF dan cosine similarity, model berhasil mengkuantifikasi kesamaan antar parfum berdasarkan karakteristik aroma mereka. Nilai similarity score berkisar antara 0.2161 hingga 0.5213 (untuk kasus Tihota Eau de Parfum), menunjukkan kemampuan model dalam membedakan tingkat kesamaan antar parfum.
-- Rekomendasi Relevan dengan Preferensi Pengguna: Sebagaimana terlihat dari hasil rekomendasi untuk parfum "Tihota Eau de Parfum" yang memiliki notes "Vanilla bean, musks", sistem berhasil merekomendasikan parfum-parfum dengan karakteristik aroma serupa seperti "Fat Electrician Eau de Parfum" yang mengandung "vetiver, vanilla bean, opoponax and myrrh".
+2. **Kesesuaian dengan Problem Statements**:
+   - **Problem 1**: "Bagaimana cara mengembangkan sistem rekomendasi yang dapat menyarankan parfum dengan karakteristik aroma serupa?" — Terjawab dengan pengembangan sistem berbasis content-based filtering menggunakan TF-IDF dan cosine similarity yang terbukti efektif dari hasil evaluasi.
+   - **Problem 2**: "Bagaimana cara mengidentifikasi dan mengkuantifikasi kesamaan antar parfum?" — Terjawab dengan pendekatan TF-IDF untuk mengekstrak fitur penting dari notes parfum dan cosine similarity untuk mengukur kesamaan secara numerik.
+   - **Problem 3**: "Bagaimana cara menghasilkan rekomendasi yang relevan?" — Terjawab dengan sistem yang berhasil memberikan rekomendasi dengan tingkat precision dan recall yang tinggi, khususnya pada threshold 0.2.
 
-### Dampak Solusi
+3. **Pencapaian Goals**:
+   - **Goal 1**: "Mengembangkan sistem rekomendasi berbasis konten" — Berhasil dicapai dengan implementasi content-based filtering menggunakan TF-IDF dan cosine similarity.
+   - **Goal 2**: "Mengimplementasikan teknik NLP untuk mengekstrak fitur" — Berhasil dicapai dengan penggunaan normalisasi teks dan TF-IDF Vectorization yang mempertimbangkan unigram dan bigram.
+   - **Goal 3**: "Menghasilkan rekomendasi parfum yang beragam namun relevan" — Berhasil dicapai dengan sistem yang memberikan rekomendasi dengan similarity score yang tinggi (relevan) namun berasal dari berbagai merek dan kategori aroma (beragam).
 
-- Peningkatan Pengalaman Pengguna: Sistem rekomendasi parfum dapat meningkatkan pengalaman belanja konsumen dengan menyediakan rekomendasi yang personal dan relevan, mengurangi waktu pencarian, dan mengurangi "pilihan yang berlebihan".
-- Potensi Peningkatan Penjualan: Berdasarkan literatur yang dikaji, implementasi sistem rekomendasi yang efektif dapat meningkatkan penjualan hingga 35% dan kepuasan pelanggan hingga 27%. Sistem yang dikembangkan berpotensi memberikan dampak positif serupa pada bisnis parfum.
-- Diversifikasi Brand dan Notes: Hasil evaluasi menunjukkan tingkat diversity yang baik dengan 7 brand unik dari 10 rekomendasi (brand diversity ratio 0.70) dan 55 notes unik dengan rata-rata 7.40 notes per rekomendasi. Ini menunjukkan keberhasilan sistem dalam memberikan rekomendasi yang beragam namun tetap relevan.
-- Kualitas Rekomendasi: Berdasarkan evaluasi similarity score, sistem mampu memberikan rekomendasi dengan skor kesamaan yang tinggi (rata-rata 0.36) dan variasi yang cukup baik (variance 0.02). Ini menunjukkan bahwa sistem dapat memberikan rekomendasi yang relevan dan bervariasi.
-  
-### Rekomendasi untuk Pengembangan Selanjutnya
+4. **Dampak Solution Statements**:
+   - **TF-IDF Vectorizer**: Terbukti efektif dalam mengekstrak fitur penting dari karakteristik aroma parfum dengan mempertimbangkan frekuensi kata dalam dokumen dan korpus, sehingga menghasilkan representasi vektor yang kaya informasi.
+   - **Cosine Similarity**: Berhasil mengkuantifikasi kesamaan antar parfum dengan akurat, memungkinkan sistem untuk menemukan parfum dengan profil aroma yang serupa.
+   - **Rekomendasi Berdasarkan Similarity Score**: Metrik evaluasi menunjukkan bahwa pendekatan ini sangat efektif, khususnya pada threshold 0.2 dengan precision 100% dan recall yang tinggi.
 
-- Penggunaan Model Hybrid: Menggabungkan sistem rekomendasi berbasis konten dengan sistem rekomendasi berbasis kolaboratif (collaborative filtering) dapat meningkatkan akurasi dan relevansi rekomendasi.
-- Penerapan Deep Learning: Menggunakan model deep learning seperti neural networks untuk menangkap pola yang lebih kompleks dalam data dapat meningkatkan performa sistem rekomendasi.
-- Peningkatan Data: Mengumpulkan lebih banyak data parfum, termasuk ulasan pengguna dan rating, dapat meningkatkan kualitas model dan memberikan rekomendasi yang lebih personal.
+5. **Dampak Bisnis**:
+   - Sistem rekomendasi ini berpotensi mengatasi "paradoks pilihan" yang dihadapi konsumen parfum dengan menyarankan parfum serupa berdasarkan preferensi mereka.
+   - Berdasarkan penelitian yang dikutip (Hussain et al., 2022), implementasi sistem rekomendasi semacam ini dapat meningkatkan kepuasan pelanggan hingga 27% dan potensi peningkatan penjualan hingga 35%.
+   - Sistem ini dapat diimplementasikan pada platform e-commerce parfum atau aplikasi retail untuk meningkatkan pengalaman belanja dan meningkatkan cross-selling produk parfum.
+
+6. **Limitasi dan Pengembangan Masa Depan**:
+   - Sistem saat ini hanya mempertimbangkan aroma parfum, tidak memperhitungkan faktor lain seperti harga, popularitas, atau preferensi demografis pengguna.
+   - Pengembangan ke depan dapat mengintegrasikan pendekatan hybrid dengan collaborative filtering untuk mempertimbangkan pola pembelian dan preferensi pengguna lain.
+   - Penambahan fitur seperti analisis sentimen dari ulasan pengguna atau kategorisasi parfum berdasarkan musim/kesempatan dapat meningkatkan relevansi rekomendasi.
+
+Secara keseluruhan, sistem rekomendasi parfum yang dikembangkan berhasil menjawab semua problem statement dan mencapai semua goals yang diharapkan. Sistem ini memberikan solusi teknologi untuk masalah bisnis yang konkret dalam industri parfum dan berpotensi memberikan dampak positif pada kepuasan pelanggan dan pertumbuhan bisnis.
