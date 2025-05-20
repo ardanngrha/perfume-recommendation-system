@@ -48,7 +48,7 @@ Dataset yang digunakan dalam proyek ini adalah dataset parfum yang berisi inform
 
 Berikut adalah variabel-variabel pada dataset parfum:
 
-**GAMBAR**
+<img width="315" alt="variables" src="https://github.com/user-attachments/assets/df96b1e9-a9b5-46a7-bbd8-556f8c3ae0a3" />
 
 1. `Name`: Nama parfum (2.184 nilai unik, 0% missing value). Variabel ini mengidentifikasi setiap parfum secara unik.
 2. `Brand`: Merek produsen parfum (249 nilai unik, 0% missing value). Menunjukkan keragaman produsen parfum dalam dataset.
@@ -75,7 +75,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**GAMBAR**
+<img width="986" alt="parfum-20-teratas" src="https://github.com/user-attachments/assets/a7b52940-311b-4e9a-94b3-e16422a9050c" />
 
 - Berdasarkan visualisasi, TOM FORD Private Blend menduduki posisi teratas dengan hampir 40 parfum dalam dataset, diikuti oleh Profumum dan Serge Lutens yang memiliki sekitar 35-38 parfum.
 - Merek-merek premium seperti BYREDO, Xerjoff, L'Artisan Parfumeur, dan Montale memiliki representasi tinggi, menunjukkan bahwa dataset lebih condong pada segmen parfum kelas atas.
@@ -97,7 +97,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**GAMBAR**
+<img width="988" alt="wordcloud" src="https://github.com/user-attachments/assets/51c4d510-3dc8-432b-8889-326b622dc013" />
 
 - Wordcloud menunjukkan dominasi beberapa aroma kunci dalam komposisi parfum: "musk", "rose", "vanilla", "patchouli", dan "sandalwood" terlihat sebagai aroma yang paling menonjol dalam dataset.
 - Terdapat keseimbangan antara berbagai kategori aroma: floral (rose, jasmine), woody (sandalwood, cedar, oud), gourmand (vanilla), dan earthy (patchouli, vetiver), menunjukkan keragaman komposisi parfum dalam dataset.
@@ -124,7 +124,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**GAMBAR**
+<img width="983" alt="aroma-paling-umum" src="https://github.com/user-attachments/assets/6953c485-3ebd-4d9f-ada8-3065f6c8e5f4" />
 
 - "musk" merupakan aroma paling dominan dalam dataset dengan frekuensi kemunculan tertinggi (>500 kali), jauh melebihi aroma lainnya, menunjukkan peran pentingnya sebagai bahan pengikat (fixative) dan pemberi karakter dalam formulasi parfum modern.
 - Lima aroma teratas didominasi oleh kombinasi dari woody dan oriental notes: "musk", "patchouli", "vanilla", "sandalwood", dan "bergamot", yang menggambarkan preferensi pasar terhadap aroma yang kompleks, hangat, dan tahan lama.
@@ -151,7 +151,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-**GAMBAR**
+<img width="981" alt="jumlah_notes" src="https://github.com/user-attachments/assets/c8755be1-791c-4cc9-bd1a-e7c5c73945bc" />
 
 - Histogram pada Image 1 menunjukkan bahwa mayoritas parfum dalam dataset memiliki antara 5-10 aroma dalam komposisinya, dengan puncak distribusi berada di sekitar 6-7 aroma per parfum.
 - Terdapat distribusi yang menarik dimana sekitar 100 parfum memiliki jumlah aroma yang sangat rendah (0-1), yang mungkin mengindikasikan parfum minimalis atau data yang kurang lengkap untuk beberapa entri.
@@ -168,18 +168,23 @@ Dalam tahap persiapan data, beberapa teknik preprocessing diterapkan untuk memas
 
 Dataset memiliki sekitar 4% missing values pada kolom Notes yang perlu ditangani sebelum pemodelan.
 
+<img width="381" alt="missing_values" src="https://github.com/user-attachments/assets/48c8c9b8-0046-4171-974f-26adc0bc36a9" />
+
+
 ```py
 missing_values = df.isna().sum()
 df_clean = df.dropna(subset=['Notes']).copy()
 ```
 
-**GAMBAR**
+<img width="317" alt="cleaned" src="https://github.com/user-attachments/assets/e39a3a40-fc40-4be0-98c3-69353150dc0b" />
 
 - Menghapus baris dengan missing values adalah pendekatan yang paling tepat karena jumlah missing values relatif kecil (4%) dan Notes adalah fitur krusial untuk sistem rekomendasi parfum.
 
 ### 2. Normalisasi Teks
 
 Normalisasi teks dilakukan untuk menstandarisasi format teks pada kolom Description dan Notes.
+
+<img width="600" alt="Screenshot 2025-05-17 at 22 31 47" src="https://github.com/user-attachments/assets/5dd6c2c5-ed98-47d4-9956-a4a54e87d295" />
 
 ```py
 def normalize_text(text):
@@ -201,39 +206,14 @@ def normalize_text(text):
 df_clean.loc[:, 'Notes_Normalized'] = df_clean['Notes'].apply(normalize_text)
 ```
 
-**GAMBAR**
+<img width="533" alt="Screenshot 2025-05-17 at 22 32 02" src="https://github.com/user-attachments/assets/3e9bf9a1-fe9b-4e5f-8649-839fb47fca41" />
 
 - Normalisasi teks penting untuk mengurangi noise dan variasi yang tidak relevan dalam data tekstual.
 - Konversi ke lowercase memastikan konsistensi kasus dan menghindari perbedaan karena kapitalisasi.
 - Penghapusan karakter khusus dan angka mengurangi noise yang tidak memberikan informasi semantik tentang parfum.
 - Normalisasi teks meningkatkan kualitas ekstraksi fitur dan perhitungan similarity pada tahap berikutnya.
 
-### 3. Tokenisasi
-
-Tokenisasi memecah teks menjadi token (kata-kata individual).
-
-```py
-def tokenize(text):
-    if pd.isna(text):
-        return []
-    
-    # Tokenisasi
-    tokens = word_tokenize(text)
-    
-    return tokens
-
-# Terapkan tokenisasi dan stopword removal
-df_clean.loc[:, 'Notes_Tokens'] = df_clean['Notes_Normalized'].apply(tokenize)
-
-# Gabungkan tokens menjadi teks bersih
-df_clean.loc[:, 'Notes_Clean'] = df_clean['Notes_Tokens'].apply(lambda x: ' '.join(x))
-```
-
-**GAMBAR**
-
-Tokenisasi adalah langkah fundamental dalam NLP yang memungkinkan analisis pada level kata.
-
-Data siap digunakan untuk pemodelan sistem rekomendasi berbasis konten. Dataset telah dibersihkan dari missing values, dinormalisasi, dan ditokenisasi untuk memastikan kualitas data yang optimal. **Tidak digunakan** stopword removal pada tahap ini karena kita ingin mempertahankan semua kata untuk analisis similarity yang lebih baik.
+Data siap digunakan untuk pemodelan sistem rekomendasi berbasis konten. Dataset telah dibersihkan dari missing values dan dinormalisasi untuk memastikan kualitas data yang optimal. **Tidak digunakan** stopword removal pada tahap ini karena kita ingin mempertahankan semua kata untuk analisis similarity yang lebih baik.
 
 ## Modeling
 
@@ -250,10 +230,7 @@ tfidf_vectorizer = TfidfVectorizer(
   )
 tfidf_matrix = tfidf_vectorizer.fit_transform(df_clean['Notes_Clean'])
 
-print(tfidf_matrix.shape)
 ```
-
-**GAMBAR**
 
 ### Cosine Similarity
 
@@ -262,7 +239,7 @@ cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 print(f"Shape dari Cosine Similarity Matrix: {cosine_sim.shape}")
 ```
 
-**GAMBAR**
+<img width="375" alt="Screenshot 2025-05-17 at 22 36 15" src="https://github.com/user-attachments/assets/ae3cb3f1-a83d-4810-aff0-331c257817df" />
 
 ### Sistem Rekomendasi
 
@@ -294,7 +271,7 @@ print(f"\nRekomendasi parfum mirip dengan: {name} ({brand}) - {notes}")
 recommendations
 ```
 
-**GAMBAR**
+<img width="893" alt="top10" src="https://github.com/user-attachments/assets/1a65e657-2300-4591-8982-6ebc333b9380" />
 
 ### Penjelasan Model
 
@@ -356,7 +333,7 @@ di mana:
 
 ### Rangkuman Evaluasi
 
-**GAMBAR**
+<img width="443" alt="rangkuman" src="https://github.com/user-attachments/assets/456d71a3-f990-4f5f-a7ff-820e7ce2f2c0" />
 
 ## Conclusion
 
